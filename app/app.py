@@ -1,6 +1,8 @@
 import os
 import sys
 import streamlit as st
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -53,9 +55,13 @@ def main():
         col3.metric("Highest Demand Month", f"{metrics['max_demand']:,} MU", metrics['max_date'])
         col4.metric("Lowest Demand Month", f"{metrics['min_demand']:,} MU", metrics['min_date'])
 
-        st.markdown("### Historical Demand Trend")
+        st.markdown("### Historical Demand Trend (2012 - 2026)")
         fig_trend = plot_historical_trend(df)
-        st.pyplot(fig_trend)
+        st.pyplot(fig_trend, use_container_width=True)
+
+        st.markdown("#### Interactive Timeline View")
+        trend_series = df.set_index("date")["demand"]
+        st.line_chart(trend_series, use_container_width=True)
 
         st.info("Unit Note: Electricity demand is reported in MU (Million Units), where 1 MU = 1 GWh = 1,000,000 kWh.")
 
@@ -67,17 +73,17 @@ def main():
         with col_left:
             st.markdown("#### Year-wise Comparison")
             fig_year = plot_yearly_comparison(df)
-            st.pyplot(fig_year)
+            st.pyplot(fig_year, use_container_width=True)
 
         with col_right:
             st.markdown("#### Monthly Seasonal Pattern")
             fig_season = plot_monthly_seasonality(df)
-            st.pyplot(fig_season)
+            st.pyplot(fig_season, use_container_width=True)
 
         st.markdown("---")
         st.markdown("#### Actual Demand vs Previous Month Demand")
         fig_lag = plot_actual_vs_lag(df)
-        st.pyplot(fig_lag)
+        st.pyplot(fig_lag, use_container_width=True)
 
     with tab_pred:
         st.subheader("Monthly Demand Prediction")
@@ -117,21 +123,23 @@ def main():
             diff = prediction - metrics['avg_demand']
             comp_col3.metric("Difference from Average", f"{diff:+,.2f} MU")
 
-            fig_comp, ax_comp = plt.subplots(figsize=(8, 3.5))
+            fig_comp, ax_comp = plt.subplots(figsize=(8, 3.5), facecolor="white")
+            ax_comp.set_facecolor("white")
             bars = ax_comp.bar(
                 ["Historical Min", "Historical Average", "Predicted Demand", "Historical Max"],
                 [metrics["min_demand"], metrics["avg_demand"], prediction, metrics["max_demand"]],
-                color=["#7f7f7f", "#1f77b4", "#2ca02c", "#d62728"]
+                color=["#7f7f7f", "#1f77b4", "#2ca02c", "#d62728"],
+                edgecolor="black"
             )
             ax_comp.set_ylabel("Demand (MU)")
             ax_comp.set_title("Predicted Demand Compared to Historical Range")
-            ax_comp.grid(axis="y", linestyle="--", alpha=0.6)
+            ax_comp.grid(axis="y", linestyle="--", alpha=0.5)
             for bar in bars:
                 height = bar.get_height()
                 ax_comp.annotate(f"{height:,.0f}", xy=(bar.get_x() + bar.get_width() / 2, height),
                                  xytext=(0, 3), textcoords="offset points", ha="center", fontsize=9)
             fig_comp.tight_layout()
-            st.pyplot(fig_comp)
+            st.pyplot(fig_comp, use_container_width=True)
 
             st.caption("Note: This is a model-based estimate using Multiple Linear Regression, not an official government electricity forecast.")
 
